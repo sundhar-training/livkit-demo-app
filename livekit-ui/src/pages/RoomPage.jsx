@@ -128,11 +128,13 @@ function CustomConferenceLayout({ meetingView, chatMode }) {
 
   return (
     <LayoutContextProvider value={layoutContext} onWidgetChange={setWidgetState}>
-      <div className="layout-stage">
+      <div
+        className={`layout-stage chat-mode-${chatMode} ${
+          widgetState.showChat ? "chat-open" : ""
+        }`}
+      >
         <div
-          className={`custom-conference-layout chat-mode-${chatMode} ${
-            widgetState.showChat ? "chat-open" : ""
-          }`}
+          className="custom-conference-layout"
         >
           {!shouldShowFocusLayout ? (
             <div className="lk-grid-layout-wrapper">

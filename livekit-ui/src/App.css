@@ -180,6 +180,7 @@
 }
 
 .layout-stage {
+  --chat-panel-width: 360px;
   position: relative;
   min-width: 0;
   min-height: 0;
@@ -196,7 +197,6 @@
 }
 
 .custom-conference-layout {
-  --chat-panel-width: min(360px, 100%);
   min-width: 0;
   min-height: 0;
   width: 100%;
@@ -206,8 +206,7 @@
   transition: width 0.25s ease;
 }
 
-.custom-conference-layout.chat-open.chat-mode-floating,
-.custom-conference-layout.chat-open.chat-mode-docked {
+.layout-stage.chat-open .custom-conference-layout {
   width: calc(100% - var(--chat-panel-width));
 }
 
@@ -216,7 +215,7 @@
   top: 0;
   right: 0;
   bottom: 0;
-  width: var(--chat-panel-width);
+  width: min(var(--chat-panel-width), 100%);
   border-left: 1px solid #d4e0ea;
   background: #ffffff;
   z-index: 20;
@@ -229,8 +228,12 @@
   background: #fdfefe;
 }
 
-.chat-mode-docked .conference-chat-panel {
-  --chat-panel-width: min(420px, 100%);
+.layout-stage.chat-mode-floating {
+  --chat-panel-width: 360px;
+}
+
+.layout-stage.chat-mode-docked {
+  --chat-panel-width: 420px;
 }
 
 .room-insights-shell-compact .room-insights {
@@ -381,8 +384,7 @@
     bottom: 0;
   }
 
-  .custom-conference-layout.chat-open.chat-mode-floating,
-  .custom-conference-layout.chat-open.chat-mode-docked {
+  .layout-stage.chat-open .custom-conference-layout {
     width: 100%;
   }
 
