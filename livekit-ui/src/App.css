@@ -66,6 +66,44 @@
   cursor: wait;
 }
 
+.join-actions-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.secondary-btn {
+  margin-top: 0;
+  border: 1px solid #9fb8ce;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #1e4768;
+  background: #f0f7ff;
+  cursor: pointer;
+}
+
+.secondary-btn:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.rooms-hint {
+  margin: 2px 0 0;
+  font-size: 0.85rem;
+  color: #4b6680;
+}
+
+.room-status-card p {
+  margin: 4px 0 0;
+  color: #27465f;
+}
+
+.room-status-card button {
+  margin-top: 12px;
+}
+
 .join-error {
   margin-top: 12px;
   width: min(420px, 100%);
@@ -97,10 +135,170 @@
   height: 100%;
 }
 
+.conference-shell {
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+
+.conference-content {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 300px;
+}
+
+.custom-conference-layout {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  position: relative;
+}
+
+.conference-chat-panel {
+  position: absolute;
+  top: 58px;
+  right: 310px;
+  bottom: 70px;
+  width: min(360px, 40vw);
+  border-left: 1px solid #d4e0ea;
+  background: #ffffff;
+  z-index: 20;
+}
+
+.room-insights {
+  border-left: 1px solid #dbe5ef;
+  background: #f8fbff;
+  padding: 14px;
+  overflow-y: auto;
+}
+
+.room-insights h2 {
+  margin: 0 0 10px;
+  font-size: 1rem;
+  color: #10304c;
+}
+
+.insights-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.insight-item {
+  border: 1px solid #c9dae9;
+  border-radius: 10px;
+  padding: 10px;
+  background: #ffffff;
+}
+
+.insight-item strong {
+  display: block;
+  font-size: 1.2rem;
+  color: #163756;
+}
+
+.insight-label {
+  display: block;
+  font-size: 0.78rem;
+  letter-spacing: 0.01em;
+  color: #49627a;
+  margin-bottom: 2px;
+}
+
+.insights-chip-row {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.insight-chip {
+  border-radius: 999px;
+  border: 1px solid #c5d7e7;
+  background: #ffffff;
+  color: #244766;
+  font-size: 0.8rem;
+  padding: 4px 10px;
+}
+
+.participants-list-wrap {
+  margin-top: 12px;
+}
+
+.participants-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.participants-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #d7e4f0;
+  border-radius: 8px;
+  padding: 7px 9px;
+  background: #ffffff;
+  font-size: 0.85rem;
+  color: #13314b;
+}
+
+.participants-list small {
+  color: #4d6f8d;
+}
+
+.connection-badge {
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  padding: 4px 10px;
+  font-size: 0.82rem;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.leave-button {
+  margin-left: auto;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.1);
+  color: #f6fcff;
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
 @media (max-width: 640px) {
+  .join-actions-row {
+    grid-template-columns: 1fr;
+  }
+
   .conference-header {
     flex-direction: column;
     gap: 4px;
     font-size: 0.88rem;
+  }
+
+  .conference-content {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr auto;
+  }
+
+  .conference-chat-panel {
+    top: 86px;
+    right: 0;
+    left: 0;
+    width: auto;
+    bottom: 220px;
+  }
+
+  .room-insights {
+    border-left: 0;
+    border-top: 1px solid #dbe5ef;
+    max-height: 220px;
+  }
+
+  .leave-button {
+    margin-left: 0;
   }
 }
