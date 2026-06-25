@@ -52,6 +52,7 @@ function App() {
 
       const data = await res.json();
       setToken(data.token);
+      console.log(data)
       setSessionInfo({
         roomName: payload.room_name,
         participantIdentity: payload.participant_identity,
