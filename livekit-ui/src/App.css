@@ -180,7 +180,6 @@
 }
 
 .layout-stage {
-  --chat-panel-width: 360px;
   position: relative;
   min-width: 0;
   min-height: 0;
@@ -188,12 +187,16 @@
   overflow: hidden;
 }
 
-.conference-content.insights-compact {
+.conference-content.side-panel-compact {
   grid-template-columns: 1fr 220px;
 }
 
-.conference-content.insights-hidden {
+.conference-content.side-panel-hidden {
   grid-template-columns: 1fr;
+}
+
+.conference-content.side-panel-chat {
+  grid-template-columns: 1fr 360px;
 }
 
 .custom-conference-layout {
@@ -203,37 +206,34 @@
   height: 100%;
   display: grid;
   grid-template-rows: 1fr auto;
-  transition: width 0.25s ease;
+  transition: transform 0.25s ease;
 }
 
-.layout-stage.chat-open .custom-conference-layout {
-  width: calc(100% - var(--chat-panel-width));
+.conference-side-panel {
+  min-width: 0;
+  min-height: 0;
+  border-left: 1px solid #dbe5ef;
+  background: #f8fbff;
+  overflow: hidden;
 }
 
-.conference-chat-panel {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: min(var(--chat-panel-width), 100%);
-  border-left: 1px solid #d4e0ea;
+.conference-side-panel-chat {
+  background: #f5f7fb;
+  border-left: 1px solid #ced9e8;
+}
+
+.conference-side-chat {
+  height: 100%;
+  background: #f5f7fb;
+}
+
+.conference-side-chat .lk-chat {
+  background: #f5f7fb;
+}
+
+.conference-side-chat .lk-chat-entry,
+.conference-side-chat .lk-chat-form {
   background: #ffffff;
-  z-index: 20;
-  box-shadow: -8px 0 24px rgba(13, 33, 53, 0.12);
-}
-
-.conference-chat-panel-docked {
-  width: min(420px, 100%);
-  border-left: 1px solid #c8d6e4;
-  background: #fdfefe;
-}
-
-.layout-stage.chat-mode-floating {
-  --chat-panel-width: 360px;
-}
-
-.layout-stage.chat-mode-docked {
-  --chat-panel-width: 420px;
 }
 
 .room-insights-shell-compact .room-insights {
@@ -250,7 +250,7 @@
 }
 
 .room-insights {
-  border-left: 1px solid #dbe5ef;
+  border-left: 0;
   background: #f8fbff;
   padding: 14px;
   overflow-y: auto;
@@ -376,22 +376,23 @@
     grid-template-rows: 1fr auto;
   }
 
-  .conference-chat-panel {
-    top: 0;
-    right: 0;
-    left: auto;
-    width: min(100%, 360px);
-    bottom: 0;
+  .conference-content.side-panel-chat,
+  .conference-content.side-panel-compact,
+  .conference-content.side-panel-hidden {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr auto;
   }
 
-  .layout-stage.chat-open .custom-conference-layout {
-    width: 100%;
+  .conference-side-panel {
+    border-left: 0;
+    border-top: 1px solid #dbe5ef;
+    max-height: 240px;
   }
 
   .room-insights {
     border-left: 0;
-    border-top: 1px solid #dbe5ef;
-    max-height: 220px;
+    border-top: 0;
+    max-height: none;
   }
 
   .leave-button {

@@ -72,7 +72,7 @@ function RoomInsightsPanel() {
   );
 }
 
-function CustomConferenceLayout({ meetingView, chatMode }) {
+function CustomConferenceLayout({ meetingView, insightsMode }) {
   const [widgetState, setWidgetState] = useState({
     showChat: false,
     unreadMessages: 0,
@@ -126,40 +126,45 @@ function CustomConferenceLayout({ meetingView, chatMode }) {
     }
   }, [focusTrack, screenShareTracks, layoutContext]);
 
+  const isChatOpen = widgetState.showChat;
+  const shouldShowInsights = insightsMode !== "hidden";
+  const sidePanelMode = isChatOpen ? "chat" : shouldShowInsights ? insightsMode : "hidden";
+
   return (
     <LayoutContextProvider value={layoutContext} onWidgetChange={setWidgetState}>
       <div
-        className={`layout-stage chat-mode-${chatMode} ${
-          widgetState.showChat ? "chat-open" : ""
+        className={`conference-content conference-content-inner side-panel-${sidePanelMode} ${
+          isChatOpen ? "chat-active" : ""
         }`}
       >
-        <div
-          className="custom-conference-layout"
-        >
-          {!shouldShowFocusLayout ? (
-            <div className="lk-grid-layout-wrapper">
-              <GridLayout tracks={tracks}>
-                <ParticipantTile />
-              </GridLayout>
-            </div>
-          ) : (
-            <div className="lk-focus-layout-wrapper">
-              <FocusLayoutContainer>
-                <CarouselLayout tracks={carouselTracks}>
+        <div className="layout-stage">
+          <div className="custom-conference-layout">
+            {!shouldShowFocusLayout ? (
+              <div className="lk-grid-layout-wrapper">
+                <GridLayout tracks={tracks}>
                   <ParticipantTile />
-                </CarouselLayout>
-                {activeFocusTrack ? <FocusLayout trackRef={activeFocusTrack} /> : null}
-              </FocusLayoutContainer>
-            </div>
-          )}
+                </GridLayout>
+              </div>
+            ) : (
+              <div className="lk-focus-layout-wrapper">
+                <FocusLayoutContainer>
+                  <CarouselLayout tracks={carouselTracks}>
+                    <ParticipantTile />
+                  </CarouselLayout>
+                  {activeFocusTrack ? <FocusLayout trackRef={activeFocusTrack} /> : null}
+                </FocusLayoutContainer>
+              </div>
+            )}
 
-          <ControlBar controls={{ chat: true, settings: false }} />
+            <ControlBar controls={{ chat: true, settings: false }} />
+          </div>
         </div>
 
-        <Chat
-          className={`conference-chat-panel conference-chat-panel-${chatMode}`}
-          style={{ display: widgetState.showChat ? "grid" : "none" }}
-        />
+        {sidePanelMode !== "hidden" ? (
+          <aside className={`conference-side-panel conference-side-panel-${sidePanelMode}`}>
+            {isChatOpen ? <Chat className="conference-side-chat" /> : <RoomInsightsPanel />}
+          </aside>
+        ) : null}
       </div>
     </LayoutContextProvider>
   );
@@ -182,7 +187,6 @@ function RoomPage() {
     error: "",
   });
   const [meetingView, setMeetingView] = useState("auto");
-  const [chatMode, setChatMode] = useState("floating");
   const [insightsMode, setInsightsMode] = useState("expanded");
 
   useEffect(() => {
@@ -325,14 +329,6 @@ function RoomPage() {
             </label>
 
             <label>
-              Chat panel
-              <select value={chatMode} onChange={(event) => setChatMode(event.target.value)}>
-                <option value="floating">Floating</option>
-                <option value="docked">Docked</option>
-              </select>
-            </label>
-
-            <label>
               Insights
               <select value={insightsMode} onChange={(event) => setInsightsMode(event.target.value)}>
                 <option value="expanded">Expanded</option>
@@ -342,14 +338,7 @@ function RoomPage() {
             </label>
           </section>
 
-          <div className={`conference-content insights-${insightsMode}`}>
-            <CustomConferenceLayout meetingView={meetingView} chatMode={chatMode} />
-            {insightsMode !== "hidden" ? (
-              <div className={`room-insights-shell room-insights-shell-${insightsMode}`}>
-                <RoomInsightsPanel />
-              </div>
-            ) : null}
-          </div>
+          <CustomConferenceLayout meetingView={meetingView} insightsMode={insightsMode} />
           <ConnectionStateToast />
           <RoomAudioRenderer />
         </div>
