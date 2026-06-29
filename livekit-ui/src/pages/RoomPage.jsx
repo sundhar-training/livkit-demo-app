@@ -82,6 +82,7 @@ function TranscriptPanel() {
   const [translatedEntries, setTranslatedEntries] = useState({});
   const [isTranslating, setIsTranslating] = useState(false);
   const [translationError, setTranslationError] = useState("");
+  const [localTranscriptEntries, setLocalTranscriptEntries] = useState([]);
   const [speechStatus, setSpeechStatus] = useState(() => {
     if (typeof window === "undefined") {
       return "unsupported";
@@ -107,7 +108,7 @@ function TranscriptPanel() {
   }, [participants]);
 
   const transcriptItems = useMemo(() => {
-    return textStreams.map((item, index) => {
+    const sharedItems = textStreams.map((item, index) => {
       const rawText = item?.text ?? String(item ?? "");
       const speakerIdentity = item?.participantInfo?.identity ?? "Speaker";
       const speaker =
@@ -123,38 +124,18 @@ function TranscriptPanel() {
         order: index,
       };
     });
-  }, [participantLabelByIdentity, textStreams]);
 
-  const groupedTranscriptItems = useMemo(() => {
-    if (!transcriptItems.length) {
-      return [];
-    }
+    const localItems = localTranscriptEntries.map((item, index) => ({
+      ...item,
+      source: "local-echo",
+      order: sharedItems.length + index,
+    }));
 
-    const groups = [];
-
-    for (const entry of transcriptItems) {
-      const lastGroup = groups[groups.length - 1];
-
-      if (lastGroup && lastGroup.speaker === entry.speaker) {
-        lastGroup.lines.push(entry);
-        lastGroup.text = `${lastGroup.text} ${entry.text}`.trim();
-        lastGroup.timestamp = entry.timestamp;
-      } else {
-        groups.push({
-          id: entry.id,
-          speaker: entry.speaker,
-          timestamp: entry.timestamp,
-          text: entry.text,
-          lines: [entry],
-        });
-      }
-    }
-
-    return groups;
-  }, [transcriptItems]);
+    return [...sharedItems, ...localItems];
+  }, [localTranscriptEntries, participantLabelByIdentity, textStreams]);
 
   const displayedTranscriptText = useMemo(() => {
-    return groupedTranscriptItems
+    return transcriptItems
       .map((entry) => {
         const lineText = targetLanguage === "en" ? entry.text : translatedEntries[entry.id] || entry.text;
         const timeLabel = new Date(entry.timestamp).toLocaleTimeString();
@@ -162,10 +143,10 @@ function TranscriptPanel() {
         return `[${timeLabel}] ${entry.speaker}: ${lineText}`;
       })
       .join("\n");
-  }, [groupedTranscriptItems, targetLanguage, translatedEntries]);
+  }, [transcriptItems, targetLanguage, translatedEntries]);
 
   const handleDownloadTranscript = () => {
-    if (!groupedTranscriptItems.length) {
+    if (!transcriptItems.length) {
       return;
     }
 
@@ -209,6 +190,15 @@ function TranscriptPanel() {
 
         try {
           await localParticipant.sendText(transcriptText, { topic: TRANSCRIPT_TOPIC });
+          setLocalTranscriptEntries((previousEntries) => [
+            ...previousEntries,
+            {
+              id: `${Date.now()}-${previousEntries.length}`,
+              text: transcriptText,
+              speaker: localParticipant.name || localParticipant.identity || "You",
+              timestamp: Date.now(),
+            },
+          ]);
         } catch (error) {
           setSpeechStatus("error");
           setTranslationError(
@@ -239,7 +229,7 @@ function TranscriptPanel() {
 
   useEffect(() => {
     const translateEntries = async () => {
-      if (!groupedTranscriptItems.length) {
+      if (!transcriptItems.length) {
         setTranslatedEntries({});
         return;
       }
@@ -255,7 +245,7 @@ function TranscriptPanel() {
 
       try {
         const translations = await Promise.all(
-          groupedTranscriptItems.map(async (entry) => {
+          transcriptItems.map(async (entry) => {
             if (!entry.text) {
               return [entry.id, ""];
             }
@@ -291,7 +281,7 @@ function TranscriptPanel() {
     };
 
     translateEntries();
-  }, [targetLanguage, groupedTranscriptItems, transcriptApiUrl]);
+  }, [targetLanguage, transcriptItems, transcriptApiUrl]);
 
   return (
     <section className="conference-side-panel transcript-panel">
@@ -317,7 +307,7 @@ function TranscriptPanel() {
             type="button"
             className="secondary-btn transcript-download-btn"
             onClick={handleDownloadTranscript}
-            disabled={!groupedTranscriptItems.length}
+            disabled={!transcriptItems.length}
           >
             Download TXT
           </button>
@@ -328,29 +318,33 @@ function TranscriptPanel() {
         <span>
           {isTranslating
             ? "Translating…"
-            : `${groupedTranscriptItems.length} grouped line(s) from ${transcriptItems.length} shared transcript line(s)`}
+            : `${transcriptItems.length} transcript line(s)`}
         </span>
         <span className="transcript-source-state">
           {speechStatus === "unsupported"
             ? "Browser captions unavailable; shared room transcript still plays back"
             : speechStatus === "listening"
-              ? "Capturing microphone and publishing to room"
+              ? "Capturing microphone and publishing to the room"
               : speechStatus === "error"
                 ? "Transcript capture paused"
-                : "Ready to capture and publish room captions"}
+                : "Ready to capture and publish shared captions"}
         </span>
         {translationError ? <span className="transcript-error">{translationError}</span> : null}
       </div>
 
       <div className="transcript-list">
-        {groupedTranscriptItems.length ? (
-          groupedTranscriptItems.map((entry) => (
+        {transcriptItems.length ? (
+          transcriptItems.map((entry) => (
             <article className="transcript-item" key={entry.id}>
               <div className="transcript-meta">
                 <strong>{entry.speaker}</strong>
                 <span>{new Date(entry.timestamp).toLocaleTimeString()}</span>
               </div>
-              <p>{targetLanguage === "en" ? entry.text : translatedEntries[entry.id] || entry.text}</p>
+              <p>
+                {targetLanguage === "en"
+                  ? entry.text
+                  : translatedEntries[entry.id] || entry.text}
+              </p>
             </article>
           ))
         ) : (
