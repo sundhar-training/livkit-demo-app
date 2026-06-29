@@ -372,9 +372,12 @@
   border: 1px solid #b9cce2;
   padding: 8px 10px;
   font-size: 0.92rem;
-  resize: vertical;
+  resize: none;
   min-height: 54px;
+  max-height: 180px;
+  overflow-y: auto;
   background: #ffffff;
+  color: #000000;
 }
 
 .chat-panel-form-actions {

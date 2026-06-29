@@ -19,6 +19,7 @@ import {
   useParticipants,
   usePinnedTracks,
   useTextStream,
+  useTranscriptions,
   useSpeakingParticipants,
   useTracks,
 } from "@livekit/components-react";
@@ -92,6 +93,7 @@ function ChatPanel({ roomName, participantIdentity }) {
   const [sendError, setSendError] = useState("");
   const [lastReadMessageIndex, setLastReadMessageIndex] = useState(-1);
   const scrollContainerRef = useRef(null);
+  const draftInputRef = useRef(null);
 
   const chatStorageKey = useMemo(
     () => getChatStorageKey(roomName, participantIdentity),
@@ -204,6 +206,34 @@ function ChatPanel({ roomName, participantIdentity }) {
     }
   };
 
+  const resizeDraftInput = () => {
+    const inputElement = draftInputRef.current;
+    if (!inputElement) {
+      return;
+    }
+
+    inputElement.style.height = "auto";
+    inputElement.style.height = `${Math.min(inputElement.scrollHeight, 180)}px`;
+  };
+
+  const handleDraftChange = (event) => {
+    setDraftMessage(event.target.value);
+    resizeDraftInput();
+  };
+
+  const handleDraftKeyDown = (event) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      if (!isSending && draftMessage.trim()) {
+        event.currentTarget.form?.requestSubmit();
+      }
+    }
+  };
+
+  useEffect(() => {
+    resizeDraftInput();
+  }, [draftMessage]);
+
   return (
     <section className="conference-side-panel chat-panel">
       <div className="chat-panel-header">
@@ -244,9 +274,11 @@ function ChatPanel({ roomName, participantIdentity }) {
       <form className="chat-panel-form" onSubmit={handleSubmit}>
         <label htmlFor="chat-draft-input">Message</label>
         <textarea
+          ref={draftInputRef}
           id="chat-draft-input"
           value={draftMessage}
-          onChange={(event) => setDraftMessage(event.target.value)}
+          onChange={handleDraftChange}
+          onKeyDown={handleDraftKeyDown}
           placeholder="Type a message"
           rows={2}
         />
@@ -306,11 +338,13 @@ function RoomInsightsPanel() {
 function TranscriptPanel({ roomName, participantIdentity }) {
   const { localParticipant } = useLocalParticipant();
   const participants = useParticipants();
+  const transcriptions = useTranscriptions();
   const [targetLanguage, setTargetLanguage] = useState("en");
   const [translatedEntries, setTranslatedEntries] = useState({});
   const [isTranslating, setIsTranslating] = useState(false);
   const [translationError, setTranslationError] = useState("");
   const [captureError, setCaptureError] = useState("");
+  const [localTranscriptEntries, setLocalTranscriptEntries] = useState([]);
   const [speechStatus, setSpeechStatus] = useState(() => {
     if (typeof window === "undefined") {
       return "unsupported";
@@ -341,7 +375,7 @@ function TranscriptPanel({ roomName, participantIdentity }) {
   }, [participants]);
 
   const transcriptItems = useMemo(() => {
-    return textStreams.map((item, index) => {
+    const streamItems = textStreams.map((item, index) => {
       const rawText = item?.text ?? String(item ?? "");
       const speakerIdentity = item?.participantInfo?.identity ?? "Speaker";
       const speaker =
@@ -359,7 +393,48 @@ function TranscriptPanel({ roomName, participantIdentity }) {
         fromIdentity: speakerIdentity,
       };
     });
-  }, [participantLabelByIdentity, textStreams]);
+
+    const hookItems = transcriptions.map((item, index) => {
+      const rawText =
+        item?.text ?? item?.transcript ?? item?.message ?? item?.content ?? String(item ?? "");
+      const speakerIdentity =
+        item?.participantInfo?.identity ??
+        item?.participantIdentity ??
+        item?.participant?.identity ??
+        item?.identity ??
+        "Speaker";
+      const speaker =
+        participantLabelByIdentity.get(speakerIdentity) || speakerIdentity || "Speaker";
+      const timestampValue = Number(
+        item?.streamInfo?.timestamp ?? item?.timestamp ?? item?.time ?? index
+      );
+
+      return {
+        id: item?.id ?? item?.sid ?? `hook-${speakerIdentity}-${timestampValue}-${rawText}`,
+        text: String(rawText).trim(),
+        speaker: String(speaker),
+        timestamp: timestampValue,
+        source: "use-transcriptions",
+        fromIdentity: speakerIdentity,
+      };
+    });
+
+    const combinedItems = [...streamItems, ...hookItems, ...localTranscriptEntries].filter(
+      (entry) => entry.text
+    );
+
+    const dedupedMap = new Map();
+    for (const entry of combinedItems) {
+      const dedupeKey = `${entry.source}:${entry.fromIdentity}:${entry.timestamp}:${entry.text}`;
+      if (!dedupedMap.has(dedupeKey)) {
+        dedupedMap.set(dedupeKey, entry);
+      }
+    }
+
+    return Array.from(dedupedMap.values()).sort(
+      (firstEntry, secondEntry) => firstEntry.timestamp - secondEntry.timestamp
+    );
+  }, [localTranscriptEntries, participantLabelByIdentity, textStreams, transcriptions]);
 
   const transcriptHistory = useMemo(() => {
     const transcriptMap = new Map(persistedTranscriptHistory.map((entry) => [entry.id, entry]));
@@ -453,6 +528,23 @@ function TranscriptPanel({ roomName, participantIdentity }) {
         if (!transcriptText) {
           continue;
         }
+
+        const capturedAt = Date.now();
+        setLocalTranscriptEntries((previousEntries) => {
+          const nextEntries = [
+            ...previousEntries,
+            {
+              id: `local-${localParticipant.identity}-${capturedAt}-${index}`,
+              text: transcriptText,
+              speaker: localParticipant.name || localParticipant.identity || "You",
+              timestamp: capturedAt,
+              source: "local-caption",
+              fromIdentity: localParticipant.identity,
+            },
+          ];
+
+          return nextEntries.slice(-TRANSCRIPT_HISTORY_LIMIT);
+        });
 
         try {
           await localParticipant.sendText(transcriptText, { topic: TRANSCRIPT_TOPIC });
