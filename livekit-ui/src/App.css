@@ -296,12 +296,16 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  display: grid;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
   gap: 8px;
   padding-right: 4px;
 }
 
 .chat-panel-entry {
+  width: fit-content;
+  max-width: 88%;
   border-radius: 10px;
   border: 1px solid #d8e4f2;
   padding: 9px;
@@ -309,8 +313,13 @@
 }
 
 .chat-panel-entry.is-own {
+  align-self: flex-end;
   border-color: #b7d3f2;
   background: #eff7ff;
+}
+
+.chat-panel-entry.is-remote {
+  align-self: flex-start;
 }
 
 .chat-panel-entry.is-mention {
@@ -333,6 +342,7 @@
   margin: 0;
   color: #17354d;
   line-height: 1.35;
+  word-break: break-word;
 }
 
 .chat-mention-chip {
@@ -368,6 +378,7 @@
 }
 
 .chat-panel-form textarea {
+  flex: 1;
   border-radius: 8px;
   border: 1px solid #b9cce2;
   padding: 8px 10px;
@@ -378,6 +389,18 @@
   overflow-y: auto;
   background: #ffffff;
   color: #000000;
+}
+
+.chat-panel-compose-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.chat-panel-compose-row .secondary-btn {
+  margin-top: 0;
+  white-space: nowrap;
+  align-self: flex-end;
 }
 
 .chat-panel-form-actions {

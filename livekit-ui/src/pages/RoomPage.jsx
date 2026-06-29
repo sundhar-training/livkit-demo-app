@@ -273,21 +273,21 @@ function ChatPanel({ roomName, participantIdentity }) {
 
       <form className="chat-panel-form" onSubmit={handleSubmit}>
         <label htmlFor="chat-draft-input">Message</label>
-        <textarea
-          ref={draftInputRef}
-          id="chat-draft-input"
-          value={draftMessage}
-          onChange={handleDraftChange}
-          onKeyDown={handleDraftKeyDown}
-          placeholder="Type a message"
-          rows={2}
-        />
-        <div className="chat-panel-form-actions">
+        <div className="chat-panel-compose-row">
+          <textarea
+            ref={draftInputRef}
+            id="chat-draft-input"
+            value={draftMessage}
+            onChange={handleDraftChange}
+            onKeyDown={handleDraftKeyDown}
+            placeholder="Type a message"
+            rows={2}
+          />
           <button type="submit" className="secondary-btn" disabled={isSending || !draftMessage.trim()}>
             {isSending ? "Sending..." : "Send"}
           </button>
-          {sendError ? <span className="chat-panel-error">{sendError}</span> : null}
         </div>
+        {sendError ? <span className="chat-panel-error">{sendError}</span> : null}
       </form>
     </section>
   );
