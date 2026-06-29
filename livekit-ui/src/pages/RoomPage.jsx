@@ -92,7 +92,7 @@ function CustomConferenceLayout({ meetingView, insightsEnabled, roomName, partic
   }, [focusTrack, screenShareTracks, layoutContext]);
 
   const isChatOpen = widgetState.showChat;
-  const showTranscriptOverlay = !isChatOpen;
+  const showTranscriptOverlay = true;
   const sidePanelMode = isChatOpen ? "chat" : insightsEnabled ? "expanded" : "hidden";
 
   return (
