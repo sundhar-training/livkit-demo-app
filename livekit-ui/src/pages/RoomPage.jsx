@@ -14,8 +14,6 @@ import {
   ParticipantTile,
   RoomAudioRenderer,
   useCreateLayoutContext,
-  useLocalParticipant,
-  useParticipants,
   usePinnedTracks,
   useTracks,
 } from "@livekit/components-react";
@@ -167,69 +165,6 @@ function CustomConferenceLayout({
   );
 }
 
-function RecordingControls({
-  recordingStatus,
-  recordingError,
-  onStartRecording,
-  onStopRecording,
-  insightsEnabled,
-  setInsightsEnabled,
-}) {
-  const { localParticipant } = useLocalParticipant();
-  const participants = useParticipants();
-
-  const hasRoomMedia = Boolean(
-    [localParticipant, ...participants]
-      .filter(Boolean)
-      .some((participant) =>
-        participant
-          .getTrackPublications()
-          .some((publication) => Boolean(publication?.track))
-      )
-  );
-
-  const canStartRecording = Boolean(
-    localParticipant &&
-      localParticipant.isConnected &&
-      hasRoomMedia
-  );
-
-  return (
-    <>
-      <button
-        type="button"
-        className="secondary-btn"
-        onClick={() => setInsightsEnabled((current) => !current)}
-      >
-        {insightsEnabled ? "Hide insights" : "Show insights"}
-      </button>
-
-      <button
-        type="button"
-        className="secondary-btn"
-        onClick={recordingStatus === "recording" ? onStopRecording : onStartRecording}
-        disabled={
-          recordingStatus === "starting" ||
-          recordingStatus === "stopping" ||
-          (recordingStatus !== "recording" && !canStartRecording)
-        }
-      >
-        {recordingStatus === "recording" ? "Stop Recording" : "Start Recording"}
-      </button>
-
-      {recordingError ? (
-        <div className="recording-status recording-status-error">{recordingError}</div>
-      ) : recordingStatus === "recording" ? (
-        <div className="recording-status recording-status-active">Recording in progress</div>
-      ) : !canStartRecording ? (
-        <div className="recording-status recording-status-error">
-          Waiting for camera or microphone to be published before recording can start.
-        </div>
-      ) : null}
-    </>
-  );
-}
-
 /**
  * Restores or requests a room session and renders the connected LiveKit experience.
  */
@@ -252,9 +187,6 @@ function RoomPage() {
   const [meetingView, setMeetingView] = useState("auto");
   const [insightsEnabled, setInsightsEnabled] = useState(true);
   const [transcriptLanguage, setTranscriptLanguage] = useState("en-US");
-  const [recordingStatus, setRecordingStatus] = useState("idle");
-  const [recordingEgressId, setRecordingEgressId] = useState("");
-  const [recordingError, setRecordingError] = useState("");
   const [agentStatus, setAgentStatus] = useState("idle");
   const [agentError, setAgentError] = useState("");
 
@@ -336,77 +268,6 @@ function RoomPage() {
 
   const currentRoomName = sessionInfo.roomName || routeRoomName;
   const participantIdentity = sessionInfo.participantIdentity;
-
-  const startRecording = async () => {
-    if (!currentRoomName) {
-      setRecordingError("Please join the room before recording.");
-      return;
-    }
-
-    setRecordingError("");
-    setRecordingStatus("starting");
-
-    try {
-      const response = await fetch(`${appConfig.backendHttpUrl}/livekit/recordings/start`, {
-        method: "POST",
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          room_name: currentRoomName,
-          layout: "grid",
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || `Unable to start recording (${response.status})`);
-      }
-
-      const data = await response.json();
-      const egressId = data.recording?.egress_id || data.recording?.egressId || "";
-
-      setRecordingEgressId(egressId);
-      setRecordingStatus("recording");
-    } catch (error) {
-      setRecordingStatus("idle");
-      setRecordingError(error instanceof Error ? error.message : "Failed to start recording.");
-    }
-  };
-
-  const stopRecording = async () => {
-    if (!recordingEgressId) {
-      return;
-    }
-
-    setRecordingError("");
-    setRecordingStatus("stopping");
-
-    try {
-      const response = await fetch(`${appConfig.backendHttpUrl}/livekit/recordings/stop`, {
-        method: "POST",
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          egress_id: recordingEgressId,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || `Unable to stop recording (${response.status})`);
-      }
-
-      setRecordingStatus("idle");
-      setRecordingEgressId("");
-    } catch (error) {
-      setRecordingStatus("recording");
-      setRecordingError(error instanceof Error ? error.message : "Failed to stop recording.");
-    }
-  };
 
   const dispatchAgent = async () => {
     if (!currentRoomName || !participantIdentity) {
@@ -519,19 +380,18 @@ function RoomPage() {
               </select>
             </label>
 
+            <button
+              type="button"
+              className="secondary-btn"
+              onClick={() => setInsightsEnabled((current) => !current)}
+            >
+              {insightsEnabled ? "Hide insights" : "Show insights"}
+            </button>
+
             <button type="button" className="secondary-btn" onClick={dispatchAgent} disabled={agentStatus === "dispatching"}>
               {agentStatus === "dispatching" ? "Launching agent..." : "Add voice agent"}
             </button>
             {agentError ? <div className="recording-status recording-status-error">{agentError}</div> : null}
-
-            <RecordingControls
-              recordingStatus={recordingStatus}
-              recordingError={recordingError}
-              onStartRecording={startRecording}
-              onStopRecording={stopRecording}
-              insightsEnabled={insightsEnabled}
-              setInsightsEnabled={setInsightsEnabled}
-            />
           </section>
 
           <CustomConferenceLayout

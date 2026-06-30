@@ -10,7 +10,10 @@ LIVEKIT_API_KEY = os.getenv("LIVEKIT_API_KEY", "")
 LIVEKIT_API_SECRET = os.getenv("LIVEKIT_API_SECRET", "")
 AGENT_NAME = os.getenv("AGENT_NAME", "demo-voice-agent")
 AGENT_IDENTITY = os.getenv("AGENT_IDENTITY", "demo-voice-agent")
-AGENT_PROMPT = os.getenv("AGENT_PROMPT", "You are a helpful voice assistant for a LiveKit demo room.")
+AGENT_PROMPT = os.getenv(
+    "AGENT_PROMPT",
+    "You are a helpful voice assistant for a LiveKit demo room. Keep replies short and friendly.",
+)
 
 
 class DemoVoiceAgent(Agent):
@@ -24,7 +27,7 @@ async def entrypoint(ctx: JobContext) -> None:
     session = AgentSession(
         stt=aws.stt.STT(region=os.getenv("AWS_REGION", "us-east-1")),
         llm=aws.llm.LLM(
-            model=os.getenv("AWS_BEDROCK_MODEL_ID", "amazon.nova-sonic-v2"),
+            model=os.getenv("AWS_BEDROCK_MODEL_ID", "amazon.nova-sonic-v1:0"),
             region=os.getenv("AWS_REGION", "us-east-1"),
         ),
         tts=aws.tts.TTS(
@@ -41,8 +44,9 @@ async def entrypoint(ctx: JobContext) -> None:
     )
 
     await ctx.room.local_participant.set_attributes({"agent_name": AGENT_NAME})
-
-    await session.generate_reply("Hello! I am your LiveKit voice assistant. Ask me anything.")
+    await session.generate_reply(
+        "Hello! I am your LiveKit voice assistant. Ask me anything about this demo room."
+    )
 
 
 if __name__ == "__main__":
