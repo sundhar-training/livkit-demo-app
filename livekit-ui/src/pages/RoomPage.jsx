@@ -14,6 +14,7 @@ import {
   ParticipantTile,
   RoomAudioRenderer,
   useCreateLayoutContext,
+  useLocalParticipant,
   usePinnedTracks,
   useTracks,
 } from "@livekit/components-react";
@@ -165,6 +166,57 @@ function CustomConferenceLayout({
   );
 }
 
+function RecordingControls({
+  recordingStatus,
+  recordingError,
+  onStartRecording,
+  onStopRecording,
+  insightsEnabled,
+  setInsightsEnabled,
+}) {
+  const { localParticipant } = useLocalParticipant();
+  const canStartRecording = Boolean(
+    localParticipant &&
+      localParticipant.isConnected &&
+      (localParticipant.isCameraEnabled || localParticipant.isMicrophoneEnabled)
+  );
+
+  return (
+    <>
+      <button
+        type="button"
+        className="secondary-btn"
+        onClick={() => setInsightsEnabled((current) => !current)}
+      >
+        {insightsEnabled ? "Hide insights" : "Show insights"}
+      </button>
+
+      <button
+        type="button"
+        className="secondary-btn"
+        onClick={recordingStatus === "recording" ? onStopRecording : onStartRecording}
+        disabled={
+          recordingStatus === "starting" ||
+          recordingStatus === "stopping" ||
+          (recordingStatus !== "recording" && !canStartRecording)
+        }
+      >
+        {recordingStatus === "recording" ? "Stop Recording" : "Start Recording"}
+      </button>
+
+      {recordingError ? (
+        <div className="recording-status recording-status-error">{recordingError}</div>
+      ) : recordingStatus === "recording" ? (
+        <div className="recording-status recording-status-active">Recording in progress</div>
+      ) : !canStartRecording ? (
+        <div className="recording-status recording-status-error">
+          Waiting for camera or microphone to be published before recording can start.
+        </div>
+      ) : null}
+    </>
+  );
+}
+
 /**
  * Restores or requests a room session and renders the connected LiveKit experience.
  */
@@ -272,6 +324,7 @@ function RoomPage() {
 
   const startRecording = async () => {
     if (!currentRoomName) {
+      setRecordingError("Please join the room before recording.");
       return;
     }
 
@@ -416,28 +469,15 @@ function RoomPage() {
               </select>
             </label>
 
-            <button
-              type="button"
-              className="secondary-btn"
-              onClick={() => setInsightsEnabled((current) => !current)}
-            >
-              {insightsEnabled ? "Hide insights" : "Show insights"}
-            </button>
-
-            <button
-              type="button"
-              className="secondary-btn"
-              onClick={recordingStatus === "recording" ? stopRecording : startRecording}
-              disabled={recordingStatus === "starting" || recordingStatus === "stopping"}
-            >
-              {recordingStatus === "recording" ? "Stop Recording" : "Start Recording"}
-            </button>
+            <RecordingControls
+              recordingStatus={recordingStatus}
+              recordingError={recordingError}
+              onStartRecording={startRecording}
+              onStopRecording={stopRecording}
+              insightsEnabled={insightsEnabled}
+              setInsightsEnabled={setInsightsEnabled}
+            />
           </section>
-          {recordingError ? (
-            <div className="recording-status recording-status-error">{recordingError}</div>
-          ) : recordingStatus === "recording" ? (
-            <div className="recording-status recording-status-active">Recording in progress</div>
-          ) : null}
 
           <CustomConferenceLayout
             meetingView={meetingView}
