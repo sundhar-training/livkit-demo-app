@@ -187,6 +187,9 @@ function RoomPage() {
   const [meetingView, setMeetingView] = useState("auto");
   const [insightsEnabled, setInsightsEnabled] = useState(true);
   const [transcriptLanguage, setTranscriptLanguage] = useState("en-US");
+  const [recordingStatus, setRecordingStatus] = useState("idle");
+  const [recordingEgressId, setRecordingEgressId] = useState("");
+  const [recordingError, setRecordingError] = useState("");
 
   useEffect(() => {
     if (location.state?.token) {
@@ -266,6 +269,76 @@ function RoomPage() {
 
   const currentRoomName = sessionInfo.roomName || routeRoomName;
   const participantIdentity = sessionInfo.participantIdentity;
+
+  const startRecording = async () => {
+    if (!currentRoomName) {
+      return;
+    }
+
+    setRecordingError("");
+    setRecordingStatus("starting");
+
+    try {
+      const response = await fetch(`${appConfig.backendHttpUrl}/livekit/recordings/start`, {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          room_name: currentRoomName,
+          layout: "grid",
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || `Unable to start recording (${response.status})`);
+      }
+
+      const data = await response.json();
+      const egressId = data.recording?.egress_id || data.recording?.egressId || "";
+
+      setRecordingEgressId(egressId);
+      setRecordingStatus("recording");
+    } catch (error) {
+      setRecordingStatus("idle");
+      setRecordingError(error instanceof Error ? error.message : "Failed to start recording.");
+    }
+  };
+
+  const stopRecording = async () => {
+    if (!recordingEgressId) {
+      return;
+    }
+
+    setRecordingError("");
+    setRecordingStatus("stopping");
+
+    try {
+      const response = await fetch(`${appConfig.backendHttpUrl}/livekit/recordings/stop`, {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          egress_id: recordingEgressId,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || `Unable to stop recording (${response.status})`);
+      }
+
+      setRecordingStatus("idle");
+      setRecordingEgressId("");
+    } catch (error) {
+      setRecordingStatus("recording");
+      setRecordingError(error instanceof Error ? error.message : "Failed to stop recording.");
+    }
+  };
 
   const handleLeave = () => {
     clearPersistedList(getChatStorageKey(currentRoomName, participantIdentity));
@@ -350,7 +423,21 @@ function RoomPage() {
             >
               {insightsEnabled ? "Hide insights" : "Show insights"}
             </button>
+
+            <button
+              type="button"
+              className="secondary-btn"
+              onClick={recordingStatus === "recording" ? stopRecording : startRecording}
+              disabled={recordingStatus === "starting" || recordingStatus === "stopping"}
+            >
+              {recordingStatus === "recording" ? "Stop Recording" : "Start Recording"}
+            </button>
           </section>
+          {recordingError ? (
+            <div className="recording-status recording-status-error">{recordingError}</div>
+          ) : recordingStatus === "recording" ? (
+            <div className="recording-status recording-status-active">Recording in progress</div>
+          ) : null}
 
           <CustomConferenceLayout
             meetingView={meetingView}

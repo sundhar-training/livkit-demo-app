@@ -162,6 +162,26 @@
   background: #ffffff;
 }
 
+.recording-status {
+  margin: 8px 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.recording-status-active {
+  color: #1f5b1f;
+  background: #e6f4ea;
+  border: 1px solid #b7ddb6;
+}
+
+.recording-status-error {
+  color: #7a1f1f;
+  background: #fceaea;
+  border: 1px solid #ebbcbc;
+}
+
 .conference-room {
   height: 100%;
 }
